@@ -2,3 +2,4 @@ env
 .env
 .ruff_cache
 __pycache__
+my_file*
