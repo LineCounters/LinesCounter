@@ -2,7 +2,7 @@ from re import match as is_string_matching
 from re import sub as replace_string_matching
 
 
-def remove_all_comments_and_docstrings_from_content_lines(
+def remove_all_comments_from_content_lines(
     content_lines: list[str],
 ) -> list[str]:
     lines_without_inline_comments = remove_inline_comments_from_content_lines(

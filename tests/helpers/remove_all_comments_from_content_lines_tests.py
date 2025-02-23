@@ -3,7 +3,7 @@
 from unittest import TestCase
 
 from src.helpers.remove_all_comments_from_content_lines import (
-    remove_all_comments_and_docstrings_from_content_lines,
+    remove_all_comments_from_content_lines,
 )
 
 
@@ -11,18 +11,14 @@ class RemoveAllCommentsFromContentLinesTests(TestCase):
     def test_that_an_empty_list_of_lines_should_return_an_empty_list(self):
         content_lines = []
 
-        lines_of_code = remove_all_comments_and_docstrings_from_content_lines(
-            content_lines
-        )
+        lines_of_code = remove_all_comments_from_content_lines(content_lines)
 
         self.assertEqual(lines_of_code, [])
 
     def test_that_a_list_of_lines_with_only_comments_should_return_an_empty_list(self):
         content_lines = ["# This is a comment", "# This is another comment"]
 
-        lines_of_code = remove_all_comments_and_docstrings_from_content_lines(
-            content_lines
-        )
+        lines_of_code = remove_all_comments_from_content_lines(content_lines)
 
         self.assertEqual(lines_of_code, [])
 
@@ -42,9 +38,7 @@ class RemoveAllCommentsFromContentLinesTests(TestCase):
             '"""',
         ]
 
-        lines_of_code = remove_all_comments_and_docstrings_from_content_lines(
-            content_lines
-        )
+        lines_of_code = remove_all_comments_from_content_lines(content_lines)
 
         self.assertEqual(lines_of_code, [])
 
@@ -68,9 +62,7 @@ class RemoveAllCommentsFromContentLinesTests(TestCase):
             '"""',
         ]
 
-        lines_of_code = remove_all_comments_and_docstrings_from_content_lines(
-            content_lines
-        )
+        lines_of_code = remove_all_comments_from_content_lines(content_lines)
 
         self.assertEqual(
             lines_of_code,
