@@ -15,13 +15,14 @@ class GetAllPythonFilePathsFromDirectoryTests(TestCase):
 
     def test_that_a_python_project_has_more_than_one_file(self):
         python_files = get_all_python_file_paths_from_directory(
-            "tests/assets/python_project"
+            "tests/assets/only_code_python_project"
         )
+
         self.assertGreaterEqual(len(python_files), 1)
 
-    def test_that_a_python_project_has_a_main_file(self):
+    def test_that_a_only_code_python_project_has_a_main_file(self):
         python_files = get_all_python_file_paths_from_directory(
-            "tests/assets/python_project"
+            "tests/assets/only_code_python_project"
         )
 
-        self.assertIn("tests/assets/python_project/main.py", python_files)
+        self.assertIn("tests/assets/only_code_python_project/main.py", python_files)
