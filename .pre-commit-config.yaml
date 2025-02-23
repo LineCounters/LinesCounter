@@ -12,7 +12,7 @@ repos:
     -   id: check-docstring-first
     -   id: end-of-file-fixer
     -   id: no-commit-to-branch
-        args: [--branch, qa, --branch, main]
+        args: [--branch, development, --branch, qa, --branch, main]
     -   id: requirements-txt-fixer
     -   id: trailing-whitespace
 
