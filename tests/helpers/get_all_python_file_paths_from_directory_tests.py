@@ -13,7 +13,7 @@ class GetAllPythonFilePathsFromDirectoryTests(TestCase):
 
         self.assertEqual(python_files, [])
 
-    def test_that_a_python_project_has_more_than_on_file(self):
+    def test_that_a_python_project_has_more_than_one_file(self):
         python_files = get_all_python_file_paths_from_directory(
             "tests/assets/python_project"
         )
