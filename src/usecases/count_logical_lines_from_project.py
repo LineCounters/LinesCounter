@@ -24,87 +24,120 @@ def count_logical_lines_from_project(project_path: str) -> int:
         )
 
         logical_lines_count_in_file = len(extract_logical_lines(lines_without_comments))
-        print(f"File: {file_path} - Logical lines: {logical_lines_count_in_file}")
+
         project_logical_lines_count += logical_lines_count_in_file
 
     return project_logical_lines_count
 
 
 def extract_logical_lines(code_lines: list[str]) -> list[str]:
-    if not code_lines:
-        return []
-
-    # Join lines to process them together
-    code_string = "\n".join(code_lines)
-
     logical_lines = []
-    in_multiline = False
+    current_parts = []
+    multiline_active = False
     parentheses_level = 0
+    current_indentation = ""
+    backslash_continuation = False
 
-    # Split by semicolons first to handle multiple statements per line
-    # but preserve semicolons in strings
-    in_string = False
-    string_char = None
-    semicolon_splits = []
-    current_split = []
-
-    for char in code_string:
-        if char in "\"'":
-            if not in_string:
-                in_string = True
-                string_char = char
-            elif string_char == char:
-                in_string = False
-        elif char == ";" and not in_string:
-            semicolon_splits.extend(["".join(current_split), ";"])
-            current_split = []
-        else:
-            current_split.append(char)
-
-    if current_split:
-        semicolon_splits.append("".join(current_split))
-
-    # Process each potential logical line
-    current_line_parts = []
-
-    for token in semicolon_splits:
-        if token == ";":
-            if current_line_parts:
-                logical_lines.append("".join(current_line_parts).strip())
-                current_line_parts = []
+    i = 0
+    while i < len(code_lines):
+        line = code_lines[i]
+        stripped = line.strip()
+        if not stripped:
+            i += 1
             continue
 
-        lines = token.split("\n")
+        # Get indentation of the current line
+        current_line_indent = line[: len(line) - len(line.lstrip())]
 
-        for i, line in enumerate(lines):
-            line = line.strip()
-            if not line:
-                continue
+        # Store initial indentation when starting a new statement
+        if not multiline_active and not backslash_continuation and stripped:
+            current_indentation = current_line_indent
 
-            # Handle explicit line continuation
-            if line.endswith("\\"):
-                in_multiline = True
-                current_line_parts.append(line[:-1].strip() + " ")
-                continue
+        # Handle semicolons when not in a multiline context
+        if ";" in stripped and not multiline_active and not backslash_continuation:
+            parts = [part.strip() for part in stripped.split(";") if part.strip()]
+            logical_lines.extend(parts)
+            i += 1
+            continue
 
-            # Count parentheses/brackets/braces
-            parentheses_level += line.count("(") + line.count("[") + line.count("{")
-            parentheses_level -= line.count(")") + line.count("]") + line.count("}")
+        # Handle backslash continuation
+        if stripped.endswith("\\"):
+            if not backslash_continuation:
+                current_parts = [stripped[:-1].strip()]
+                backslash_continuation = True
+            else:
+                current_parts.append(stripped[:-1].strip())
+            i += 1
+            continue
 
-            current_line_parts.append(line + " ")
+        # Track parentheses
+        parentheses_level += (
+            stripped.count("(") + stripped.count("[") + stripped.count("{")
+        )
+        parentheses_level -= (
+            stripped.count(")") + stripped.count("]") + stripped.count("}")
+        )
 
-            # If we're not in a multiline construct, add as a logical line
-            if not in_multiline and parentheses_level == 0:
-                if current_line_parts:
-                    logical_lines.append("".join(current_line_parts).strip())
-                    current_line_parts = []
+        # Handle backslash continuation end
+        if backslash_continuation:
+            current_parts.append(stripped)
+            logical_lines.append(" ".join(current_parts))
+            current_parts = []
+            backslash_continuation = False
+            i += 1
+            continue
 
-            # Reset multiline flag if we're not in parentheses
-            if parentheses_level == 0:
-                in_multiline = False
+        # Start or continue parentheses multiline
+        if parentheses_level > 0:
+            if not multiline_active:  # Starting new multiline
+                multiline_active = True
+                current_parts = [stripped]
+            else:
+                current_parts.append(stripped)
+        else:
+            if multiline_active:
+                # Complete multiline statement
+                current_parts.append(stripped)
+                # Join and clean up
+                joined = "".join(current_parts)
+                cleaned = ""
+                prev_char = ""
+                for char in joined:
+                    if char.isspace():
+                        if (
+                            prev_char
+                            and not prev_char.isspace()
+                            and prev_char not in "({["
+                        ):
+                            if not (cleaned and cleaned[-1].isspace()) and not (
+                                cleaned and cleaned[-1].isspace()
+                            ):
+                                cleaned += " "
+                    else:
+                        cleaned += char
+                    prev_char = char
+                logical_lines.append(current_indentation + cleaned.strip())
+                current_parts = []
+                multiline_active = False
+            else:
+                # Regular single line - keep original indentation
+                logical_lines.append(line)
 
-    # Handle any remaining line
-    if current_line_parts and not in_multiline and parentheses_level == 0:
-        logical_lines.append("".join(current_line_parts).strip())
+        i += 1
+
+    # Handle any remaining multiline
+    if current_parts:
+        joined = "".join(current_parts)
+        cleaned = ""
+        prev_char = ""
+        for char in joined:
+            if char.isspace():
+                if prev_char and not prev_char.isspace() and prev_char not in "({[":
+                    if not (cleaned and cleaned[-1].isspace()):
+                        cleaned += " "
+            else:
+                cleaned += char
+            prev_char = char
+        logical_lines.append(current_indentation + cleaned.strip())
 
     return logical_lines
