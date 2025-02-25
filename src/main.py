@@ -24,7 +24,7 @@ def main():
         )
     except Exception as error:
         print(
-            f"Oh no! An error ocurred while getting the lines count. Verify that the project path is correct: {error}"
+            f"Oh no! An error occurred while getting the line count. Verify that the project path is correct and you have read permissions to the directory: {error}"
         )
 
 
