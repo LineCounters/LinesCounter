@@ -31,113 +31,131 @@ def count_logical_lines_from_project(project_path: str) -> int:
 
 
 def extract_logical_lines(code_lines: list[str]) -> list[str]:
+    state = {
+        "multiline_buffer": [],
+        "parentheses_level": 0,
+        "current_line_indentation": "",
+        "is_multiline_active": False,
+        "is_backslash_continuation": False,
+    }
+
     logical_lines = []
-    current_parts = []
-    multiline_active = False
-    parentheses_level = 0
-    current_indentation = ""
-    backslash_continuation = False
 
-    i = 0
-    while i < len(code_lines):
-        line = code_lines[i]
-        stripped = line.strip()
-        if not stripped:
-            i += 1
-            continue
+    for code_line in code_lines:
+        logical_lines.extend(_process_line(code_line, state))
 
-        # Get indentation of the current line
-        current_line_indent = line[: len(line) - len(line.lstrip())]
-
-        # Store initial indentation when starting a new statement
-        if not multiline_active and not backslash_continuation and stripped:
-            current_indentation = current_line_indent
-
-        # Handle semicolons when not in a multiline context
-        if ";" in stripped and not multiline_active and not backslash_continuation:
-            parts = [part.strip() for part in stripped.split(";") if part.strip()]
-            logical_lines.extend(parts)
-            i += 1
-            continue
-
-        # Handle backslash continuation
-        if stripped.endswith("\\"):
-            if not backslash_continuation:
-                current_parts = [stripped[:-1].strip()]
-                backslash_continuation = True
-            else:
-                current_parts.append(stripped[:-1].strip())
-            i += 1
-            continue
-
-        # Track parentheses
-        parentheses_level += (
-            stripped.count("(") + stripped.count("[") + stripped.count("{")
-        )
-        parentheses_level -= (
-            stripped.count(")") + stripped.count("]") + stripped.count("}")
+    if state["multiline_buffer"]:
+        logical_lines.append(
+            state["current_line_indentation"]
+            + _consolidate_multiline(
+                state["multiline_buffer"],
+            )
         )
 
-        # Handle backslash continuation end
-        if backslash_continuation:
-            current_parts.append(stripped)
-            logical_lines.append(" ".join(current_parts))
-            current_parts = []
-            backslash_continuation = False
-            i += 1
-            continue
+    return logical_lines
 
-        # Start or continue parentheses multiline
-        if parentheses_level > 0:
-            if not multiline_active:  # Starting new multiline
-                multiline_active = True
-                current_parts = [stripped]
-            else:
-                current_parts.append(stripped)
+
+def _get_line_indentation(line: str) -> str:
+    return line[: len(line) - len(line.lstrip())]
+
+
+def _calculate_nesting_level(line: str) -> int:
+    return (line.count("(") + line.count("[") + line.count("{")) - (
+        line.count(")") + line.count("]") + line.count("}")
+    )
+
+
+def _split_statements_by_semicolon(line: str) -> list[str]:
+    return [statement.strip() for statement in line.split(";") if statement.strip()]
+
+
+def _consolidate_multiline(multiline_parts: list[str]) -> str:
+    merged_multiline_content = "".join(multiline_parts)
+    trimmed_tokens_from_multiline = merged_multiline_content.split()
+
+    return " ".join(trimmed_tokens_from_multiline)
+
+
+def _handle_line_continuation_by_backslash(
+    line: str, multiline_buffer: list[str], is_backslash_continuation: bool
+) -> tuple[list[str], bool]:
+    line_without_backslash = line[:-1].strip()
+
+    if is_backslash_continuation:
+        multiline_buffer.append(line_without_backslash)
+        return multiline_buffer, True
+
+    return [line_without_backslash], True
+
+
+def _handle_multiline_statement(
+    line: str, multiline_buffer: list[str], is_in_multiline_context: bool
+) -> tuple[list[str], bool]:
+    if is_in_multiline_context:
+        multiline_buffer.append(line)
+        return multiline_buffer, True
+
+    return [line], True
+
+
+def _process_line(line: str, current_state: dict) -> list[str]:
+    line_stripped = line.strip()
+
+    line_is_not_part_of_multiline = not (
+        current_state["is_multiline_active"]
+        or current_state["is_backslash_continuation"]
+    )
+
+    if line_is_not_part_of_multiline:
+        current_state["current_line_indentation"] = _get_line_indentation(line)
+
+    if ";" in line_stripped and line_is_not_part_of_multiline:
+        return _split_statements_by_semicolon(line_stripped)
+
+    if line_stripped.endswith("\\"):
+        (
+            current_state["multiline_buffer"],
+            current_state["is_backslash_continuation"],
+        ) = _handle_line_continuation_by_backslash(
+            line_stripped,
+            current_state["multiline_buffer"],
+            current_state["is_backslash_continuation"],
+        )
+
+        return []
+
+    logical_lines = []
+    current_state["parentheses_level"] += _calculate_nesting_level(line_stripped)
+
+    if current_state["is_backslash_continuation"]:
+        logical_lines.append(
+            " ".join(current_state["multiline_buffer"] + [line_stripped])
+        )
+
+        current_state["multiline_buffer"] = []
+        current_state["is_backslash_continuation"] = False
+
+        return logical_lines
+
+    if current_state["parentheses_level"] > 0:
+        current_state["multiline_buffer"], current_state["is_multiline_active"] = (
+            _handle_multiline_statement(
+                line_stripped,
+                current_state["multiline_buffer"],
+                current_state["is_multiline_active"],
+            )
+        )
+    else:
+        if current_state["is_multiline_active"]:
+            logical_lines.append(
+                current_state["current_line_indentation"]
+                + _consolidate_multiline(
+                    current_state["multiline_buffer"] + [line_stripped]
+                )
+            )
+            current_state["multiline_buffer"] = []
+            current_state["is_multiline_active"] = False
         else:
-            if multiline_active:
-                # Complete multiline statement
-                current_parts.append(stripped)
-                # Join and clean up
-                joined = "".join(current_parts)
-                cleaned = ""
-                prev_char = ""
-                for char in joined:
-                    if char.isspace():
-                        if (
-                            prev_char
-                            and not prev_char.isspace()
-                            and prev_char not in "({["
-                        ):
-                            if not (cleaned and cleaned[-1].isspace()) and not (
-                                cleaned and cleaned[-1].isspace()
-                            ):
-                                cleaned += " "
-                    else:
-                        cleaned += char
-                    prev_char = char
-                logical_lines.append(current_indentation + cleaned.strip())
-                current_parts = []
-                multiline_active = False
-            else:
-                # Regular single line - keep original indentation
-                logical_lines.append(line)
-
-        i += 1
-
-    # Handle any remaining multiline
-    if current_parts:
-        joined = "".join(current_parts)
-        cleaned = ""
-        prev_char = ""
-        for char in joined:
-            if char.isspace():
-                if prev_char and not prev_char.isspace() and prev_char not in "({[":
-                    if not (cleaned and cleaned[-1].isspace()):
-                        cleaned += " "
-            else:
-                cleaned += char
-            prev_char = char
-        logical_lines.append(current_indentation + cleaned.strip())
+            logical_lines.append(line)
 
     return logical_lines

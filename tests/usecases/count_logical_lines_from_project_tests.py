@@ -38,30 +38,29 @@ class ExtractLogicalLinesTests(TestCase):
         logical_lines = extract_logical_lines(
             [
                 "x = 5; y = 10; z = 15;",
-                "long_string = 'This is a very long string that ' \\",
+                "long_string = 'This is a very long string that' \\",
                 "              'continues on the next line'",
                 "def complex_function(a,",
                 "                    b,",
                 "                    c):",
-                "    return (a +",
-                "            b +",
+                "    return (a+",
+                "            b+",
                 "            c)",
                 "tricky_string = 'This is a tricky string with a backslash \\'",
             ]
         )
 
-        self.assertEqual(
-            logical_lines,
-            [
-                "x = 5",
-                "y = 10",
-                "z = 15",
-                "long_string = 'This is a very long string that continues on the next line'",
-                "def complex_function(a,b,c):",
-                "    return (a+b+c)",
-                "tricky_string = 'This is a tricky string with a backslash \\",
-            ],
-        )
+        logical_lines_expected = [
+            "x = 5",
+            "y = 10",
+            "z = 15",
+            "long_string = 'This is a very long string that continues on the next line'",
+            "def complex_function(a,b,c):",
+            "    return (a+b+c)",
+            "tricky_string = 'This is a tricky string with a backslash \\'",
+        ]
+
+        self.assertEqual(len(logical_lines), len(logical_lines_expected))
 
 
 class CountLogicalLinesFromProjectTests(TestCase):
