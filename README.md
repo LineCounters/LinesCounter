@@ -2,7 +2,7 @@
 
 - Versión recomendada de Python: 3.11
 
-## Para correr la aplicación en desarrollo:
+## Instalar el entorno (Antes de ejecutar el programa):
 
 1. Crear el entorno de desarrollo:
 
@@ -36,4 +36,35 @@ pre-commit install
 
 ```bash
 cp example.env .env
+```
+
+## Correr los tests del sistema:
+
+Para ejecutar los tests unitarios y de integración basta con ejecutar:
+
+```bash
+python -m unittest discover -s tests -p "*_tests.py"
+```
+
+## Correr el sistema en modo user-friendly:
+
+Para ejecutar el sistema en modo prompt basta con ejecutar:
+
+```bash
+python -m src.main
+```
+
+## Instalar como librería:
+
+Es posible descargar el programa como librería para utilizarla en otros programas, para ello, basta con ejecutar:
+
+```bash
+pip install lines-counter
+```
+
+Importar las funciones necesarias en tu proyecto:
+
+```py
+from lines_counter import count_logical_lines_from_project
+from lines_counter import count_physical_lines_from_project
 ```
