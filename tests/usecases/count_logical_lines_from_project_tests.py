@@ -2,65 +2,41 @@ from unittest import TestCase
 
 from src.usecases.count_logical_lines_from_project import (
     count_logical_lines_from_project,
-    extract_logical_lines,
+    _extract_logical_lines,
 )
 
 
 class ExtractLogicalLinesTests(TestCase):
-    def test_that_empty_lines_should_return_empty_list(self):
-        logical_lines = extract_logical_lines([])
+    def test_that_empty_lines_should_return_empty_list_of_logical_lines(self):
+        logical_lines = _extract_logical_lines([])
 
         self.assertEqual(logical_lines, [])
 
-    def test_that_a_single_logical_line_should_return_single_line(self):
-        logical_lines = extract_logical_lines(["def function():"])
+    def test_that_a_string_with_a_logical_line_inside_should_return_empty_list_of_logical_lines(
+        self,
+    ):
+        logical_lines = _extract_logical_lines(
+            ["'def function():'", "'    if x != 0:'", "        'return x'"]
+        )
+
+        self.assertEqual(logical_lines, [])
+
+    def test_that_a_list_comprenhension_should_return_empty_list_of_logical_lines(self):
+        logical_lines = _extract_logical_lines(["[x for x in range(10) if x % 2 == 0]"])
+
+        self.assertEqual(logical_lines, [])
+
+    def test_that_a_single_logical_line_should_return_one_logical_line(self):
+        logical_lines = _extract_logical_lines(["def function():"])
 
         self.assertEqual(logical_lines, ["def function():"])
 
-    def test_that_a_single_multiline_logical_line_should_return_single_line(self):
-        logical_lines = extract_logical_lines(["def test(", "    arg):"])
-
-        self.assertEqual(logical_lines, ["def test(arg):"])
-
-    def test_that_multiple_logical_lines_should_return_multiple_lines(self):
-        logical_lines = extract_logical_lines(["def test():", "    return 'Test'"])
-
-        self.assertEqual(logical_lines, ["def test():", "    return 'Test'"])
-
-    def test_that_multiple_multiline_logical_lines_should_return_multiple_lines(self):
-        logical_lines = extract_logical_lines(["def test(", "    arg):", "    pass"])
-
-        self.assertEqual(logical_lines, ["def test(arg):", "    pass"])
-
-    def test_that_multiple_logical_lines_with_semicolons_and_backslashes_should_return_multiple_lines(
-        self,
-    ):
-        logical_lines = extract_logical_lines(
-            [
-                "x = 5; y = 10; z = 15;",
-                "long_string = 'This is a very long string that' \\",
-                "              'continues on the next line'",
-                "def complex_function(a,",
-                "                    b,",
-                "                    c):",
-                "    return (a+",
-                "            b+",
-                "            c)",
-                "tricky_string = 'This is a tricky string with a backslash \\'",
-            ]
+    def test_that_match_case_expresion_should_return_one_logical_line(self):
+        logical_lines = _extract_logical_lines(
+            ["match number:", "    case 1:", "        print('one')"]
         )
 
-        logical_lines_expected = [
-            "x = 5",
-            "y = 10",
-            "z = 15",
-            "long_string = 'This is a very long string that continues on the next line'",
-            "def complex_function(a,b,c):",
-            "    return (a+b+c)",
-            "tricky_string = 'This is a tricky string with a backslash \\'",
-        ]
-
-        self.assertEqual(len(logical_lines), len(logical_lines_expected))
+        self.assertEqual(logical_lines, ["match number:"])
 
 
 class CountLogicalLinesFromProjectTests(TestCase):
@@ -83,7 +59,7 @@ class CountLogicalLinesFromProjectTests(TestCase):
             "tests/assets/only_code_python_project"
         )
 
-        self.assertEqual(project_logical_lines_count, 18)
+        self.assertEqual(project_logical_lines_count, 19)
 
     def test_that_a_project_with_code_and_comments_should_count_the_logical_lines(
         self,
@@ -92,4 +68,4 @@ class CountLogicalLinesFromProjectTests(TestCase):
             "tests/assets/documented_python_project"
         )
 
-        self.assertEqual(project_logical_lines_count, 18)
+        self.assertEqual(project_logical_lines_count, 19)
