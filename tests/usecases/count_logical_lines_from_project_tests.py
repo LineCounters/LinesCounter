@@ -21,7 +21,7 @@ class ExtractLogicalLinesTests(TestCase):
 
         self.assertEqual(logical_lines, [])
 
-    def test_that_a_list_comprenhension_should_return_empty_list_of_logical_lines(self):
+    def test_that_a_list_comprehension_should_return_empty_list_of_logical_lines(self):
         logical_lines = _extract_logical_lines(["[x for x in range(10) if x % 2 == 0]"])
 
         self.assertEqual(logical_lines, [])
