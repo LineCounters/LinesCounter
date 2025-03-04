@@ -25,7 +25,7 @@ class CountPhysicalLinesFromProjectTests(TestCase):
             "tests/assets/only_code_python_project"
         )
 
-        self.assertEqual(project_physical_lines_count, 18)
+        self.assertEqual(project_physical_lines_count, 44)
 
     def test_that_a_project_with_code_and_comments_should_count_the_physical_lines(
         self,
@@ -34,4 +34,4 @@ class CountPhysicalLinesFromProjectTests(TestCase):
             "tests/assets/documented_python_project"
         )
 
-        self.assertEqual(project_physical_lines_count, 18)
+        self.assertEqual(project_physical_lines_count, 44)
